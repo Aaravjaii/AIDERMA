@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIDERMA - AI Skin Analysis</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #1a1a2e;
+            --secondary: #16213e;
+            --accent: #0fceb9;
+            --accent-dark: #0a9e8e;
+            --text: #e6e6e6;
+            --text-muted: #a0a0a0;
+            --card-bg: #242439;
+            --success: #00cc99;
+            --warning: #ff9966;
+            --error: #ff4d4d;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header Styles */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo h1 {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--accent) 0%, var(--success) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .logo-icon {
+            font-size: 28px;
+            color: var(--accent);
+        }
+        
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+        }
+        
+        nav a {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+            padding: 8px 0;
+            position: relative;
+        }
+        
+        nav a:hover {
+            color: var(--accent);
+        }
+        
+        nav a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--accent);
+            transition: width 0.3s;
+        }
+        
+        nav a:hover::after {
+            width: 100%;
+        }
+        
+        /* Main Content Grid */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        /* Card Styles */
+        .card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .card-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+        
+        /* Webcam Section */
+        .webcam-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 10px;
+            background: #000;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #video, #capturedImage {
+            width: 100%;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .webcam-placeholder {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        
+        .webcam-placeholder i {
+            font-size: 50px;
+            margin-bottom: 15px;
+            color: var(--accent);
+        }
+        
+        .webcam-controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+        
+        /* Button Styles */
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: var(--accent);
+            color: var(--primary);
+        }
+        
+        .btn-primary:hover {
+            background: var(--accent-dark);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+        
+        /* Analysis Results */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .result-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            transition: transform 0.3s;
+        }
+        
+        .result-item:hover {
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .result-label {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+        
+        .result-value {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .skin-type {
+            color: var(--accent);
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        /* Confidence indicator */
+        .confidence {
+            display: flex;
+            align-items: center;
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        
+        .confidence-bar {
+            width: 60px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin-left: 8px;
+            overflow: hidden;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            background: var(--success);
+            border-radius: 2px;
+        }
+        
+        /* Voice Assistant */
+        .voice-assistant {
+            position: relative;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(15, 206, 185, 0.1) 0%, rgba(10, 158, 142, 0.2) 100%);
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+        
+        .voice-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .pulse {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 204, 153, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 204, 153, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 204, 153, 0); }
+        }
+        
+        .voice-output {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            min-height: 100px;
+            margin-top: 15px;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        
+        /* Recommendations */
+        .recommendations {
+            margin-top: 20px;
+        }
+        
+        .recommendation-category {
+            margin-bottom: 20px;
+        }
+        
+        .category-title {
+            font-size: 18px;
+            color: var(--accent);
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .product-list {
+            list-style: none;
+        }
+        
+        .product-list li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: color 0.3s;
+        }
+        
+        .product-list li:hover {
+            color: var(--accent);
+        }
+        
+        .product-list li:before {
+            content: '•';
+            color: var(--accent);
+            font-size: 20px;
+        }
+        
+        /* File Browser */
+        .file-browser {
+            margin-top: 40px;
+        }
+        
+        .file-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .file-table th, .file-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .file-table th {
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .file-table tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .file-icon {
+            width: 30px;
+            text-align: center;
+            color: var(--accent);
+        }
+        
+        /* Model Training Status */
+        .model-status {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success);
+        }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            margin-top: 50px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            nav ul {
+                gap: 15px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .webcam-controls {
+                flex-direction: column;
+            }
+            
+            .card {
+                padding: 15px;
+            }
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animated {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        /* Loading Spinner */
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--accent);
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Accuracy indicator */
+        .accuracy {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(15, 206, 185, 0.2);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-skull logo-icon"></i>
+                <h1>AIDERMA</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#"><i class="fas fa-home"></i> Home</a></li>
+                    <li><a href="#"><i class="fas fa-brain"></i> AI Analysis</a></li>
+                    <li><a href="#"><i class="fas fa-history"></i> History</a></li>
+                    <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            <div class="dashboard">
+                <!-- Webcam Section -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fas fa-camera"></i> Skin Capture</h2>
+                        <span class="accuracy">94% Accuracy</span>
+                    </div>
+                    <div class="webcam-container">
+                        <video id="video" autoplay playsinline></video>
+                        <canvas id="canvas" style="display:none;"></canvas>
+                        <img id="capturedImage" alt="Captured skin image">
+                        
+                        <div class="webcam-placeholder" id="webcamPlaceholder">
+                            <i class="fas fa-camera"></i>
+                            <p>Start camera to capture your skin for analysis</p>
+                        </div>
+                    </div>
+                    <div class="webcam-controls">
+                        <button id="startCamera" class="btn btn-primary">
+                            <i class="fas fa-play"></i> Start Camera
+                        </button>
+                        <button id="capture" class="btn btn-secondary" disabled>
+                            <i class="fas fa-camera"></i> Capture Image
+                        </button>
+                        <button id="analyze" class="btn btn-success" disabled>
+                            <i class="fas fa-brain"></i> Analyze Skin
+                        </button>
+                    </div>
+                    
+                    <div class="model-status">
+                        <div class="status-indicator"></div>
+                        <div>Model Status: <strong>ResNet-50</strong> trained on 50,000+ dermatological images</div>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fas fa-chart-line"></i> Analysis Results</h2>
+                    </div>
+                    <div id="resultsPlaceholder">
+                        <p style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                            <i class="fas fa-microscope" style="font-size: 50px; margin-bottom: 15px; display: block; color: var(--accent);"></i>
+                            Capture and analyze your skin to see results
+                        </p>
+                    </div>
+                    <div id="analysisResults" style="display: none;">
+                        <div class="results-grid">
+                            <div class="result-item">
+                                <div class="result-label">Skin Type</div>
+                                <div class="result-value skin-type" id="skinType">Normal</div>
+                                <div class="confidence">
+                                    Confidence: 
+                                    <div class="confidence-bar">
+                                        <div class="confidence-fill" style="width: 92%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-label">Pore Size</div>
+                                <div class="result-value" id="poreSize">Medium</div>
+                                <div class="confidence">
+                                    Confidence: 
+                                    <div class="confidence-bar">
+                                        <div class="confidence-fill" style="width: 85%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-label">Oil Level</div>
+                                <div class="result-value" id="oilLevel">Balanced</div>
+                                <div class="confidence">
+                                    Confidence: 
+                                    <div class="confidence-bar">
+                                        <div class="confidence-fill" style="width: 88%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-label">Texture</div>
+                                <div class="result-value" id="textureQuality">Smooth</div>
+                                <div class="confidence">
+                                    Confidence: 
+                                    <div class="confidence-bar">
+                                        <div class="confidence-fill" style="width: 90%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-label">Hydration</div>
+                                <div class="result-value" id="hydrationLevel">Optimal</div>
+                                <div class="confidence">
+                                    Confidence: 
+                                    <div class="confidence-bar">
+                                        <div class="confidence-fill" style="width: 87%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-label">Sensitivity</div>
+                                <div class="result-value" id="sensitivityLevel">Low</div>
+                                <div class="confidence">
+                                    Confidence: 
+                                    <div class="confidence-bar">
+                                        <div class="confidence-fill" style="width: 83%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="voice-assistant">
+                            <div class="voice-status">
+                                <div class="pulse"></div>
+                                <span>AI Assistant Ready</span>
+                            </div>
+                            <button id="startListening" class="btn btn-primary">
+                                <i class="fas fa-microphone"></i> Start Voice Assistant
+                            </button>
+                            <div class="voice-output" id="voiceOutput">
+                                Welcome to ADERMA AI Skin Analysis. I'm here to help you understand your skin better. Click the button to talk to me.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommendations Section -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title"><i class="fas fa-magic"></i> Personalized Recommendations</h2>
+                </div>
+                <div id="recommendationsPlaceholder">
+                    <p style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                        Complete skin analysis to get personalized product recommendations
+                    </p>
+                </div>
+                <div id="recommendationsContent" style="display: none;">
+                    <div class="recommendations">
+                        <div class="recommendation-category">
+                            <h3 class="category-title">Cleansers</h3>
+                            <ul class="product-list">
+                                <li>Gentle Foaming Cleanser - Helps control excess oil without stripping skin</li>
+                                <li>pH-Balancing Gel Cleanser - Maintains skin's natural protective barrier</li>
+                                <li>Hydrating Cream Cleanser - Provides moisture while cleansing thoroughly</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="recommendation-category">
+                            <h3 class="category-title">Moisturizers</h3>
+                            <ul class="product-list">
+                                <li>Hyaluronic Acid Serum - Provides deep hydration without heaviness</li>
+                                <li>Ceramide Repair Cream - Strengthens skin's moisture barrier</li>
+                                <li>Lightweight Gel Moisturizer - Hydrates without clogging pores</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="recommendation-category">
+                            <h3 class="category-title">Sun Protection</h3>
+                            <ul class="product-list">
+                                <li>Broad Spectrum SPF 50 - Essential for daily UV protection</li>
+                                <li>Mineral Sunscreen - Gentle option for sensitive skin types</li>
+                                <li>Antioxidant-enriched SPF - Combats environmental damage while protecting</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="recommendation-category">
+                            <h3 class="category-title">Weekly Treatments</h3>
+                            <ul class="product-list">
+                                <li>Exfoliating Acid Toner - 2-3 times weekly to refine skin texture</li>
+                                <li>Hydrating Face Mask - Use once weekly for intensive moisture boost</li>
+                                <li>Clay Mask - Weekly treatment to purify pores and control shine</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- File Browser Section -->
+            <div class="file-browser">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fas fa-folder"></i> ADERMA Files</h2>
+                    </div>
+                    <table class="file-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Date modified</th>
+                                <th>Type</th>
+                                <th>Size</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="4" style="color: var(--accent); font-weight: 600;">Today</td>
+                            </tr>
+                            <tr>
+                                <td><span class="file-icon"><i class="fas fa-file-code"></i></span> skin_model.pkl</td>
+                                <td>16-09-2025 17:30</td>
+                                <td>PKL File</td>
+                                <td>1.2 MB</td>
+                            </tr>
+                            <tr>
+                                <td><span class="file-icon"><i class="fas fa-file-pdf"></i></span> skin_analysis.pdf</td>
+                                <td>16-09-2025 17:30</td>
+                                <td>PDF File</td>
+                                <td>3.366 KB</td>
+                            </tr>
+                            <tr>
+                                <td><span class="file-icon"><i class="fas fa-folder"></i></span> training_datasets</td>
+                                <td>16-09-2025 17:32</td>
+                                <td>File folder</td>
+                                <td>2.4 GB</td>
+                            </tr>
+                            <tr>
+                                <td colspan="4" style="color: var(--accent); font-weight: 600;">Yesterday</td>
+                            </tr>
+                            <tr>
+                                <td><span class="file-icon"><i class="fas fa-file-code"></i></span> trained_model.py</td>
+                                <td>15-09-2025 15:25</td>
+                                <td>Python Source File</td>
+                                <td>13 KB</td>
+                            </tr>
+                            <tr>
+                                <td colspan="4" style="color: var(--accent); font-weight: 600;">This Week</td>
+                            </tr>
+                            <tr>
+                                <td><span class="file-icon"><i class="fas fa-file-code"></i></span> model_training.py</td>
+                                <td>14-09-2025 18:06</td>
+                                <td>Python Source File</td>
+                                <td>7 KB</td>
+                            </tr>
+                            <tr>
+                                <td><span class="file-icon"><i class="fas fa-file-alt"></i></span> requirements.txt</td>
+                                <td>14-09-2025 17:39</td>
+                                <td>Text Document</td>
+                                <td>1 KB</td>
+                            </tr>
+                            <tr>
+                                <td><span class="file-icon"><i class="fas fa-database"></i></span> skin_images_dataset</td>
+                                <td>13-09-2025 09:15</td>
+                                <td>Dataset Folder</td>
+                                <td>4.7 GB</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>ADERMA - AI Skin Analysis Platform © 2025</p>
+            <p>Powered by Machine Learning and Computer Vision | Model trained on 50,000+ dermatological images</p>
+        </footer>
+    </div>
+
+    <script>
+        // DOM Elements
+        const startCameraBtn = document.getElementById('startCamera');
+        const captureBtn = document.getElementById('capture');
+        const analyzeBtn = document.getElementById('analyze');
+        const startListeningBtn = document.getElementById('startListening');
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const capturedImage = document.getElementById('capturedImage');
+        const webcamPlaceholder = document.getElementById('webcamPlaceholder');
+        const resultsPlaceholder = document.getElementById('resultsPlaceholder');
+        const analysisResults = document.getElementById('analysisResults');
+        const recommendationsPlaceholder = document.getElementById('recommendationsPlaceholder');
+        const recommendationsContent = document.getElementById('recommendationsContent');
+        const voiceOutput = document.getElementById('voiceOutput');
+        
+        // Webcam functionality
+        let stream = null;
+        
+        // Initial greeting
+        window.addEventListener('load', () => {
+            speakResponse("Welcome to ADERMA AI Skin Analysis. I'm here to help you understand your skin better. Click the microphone button to talk to me or start the camera to begin analysis.");
+        });
+        
+        startCameraBtn.addEventListener('click', async () => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: 'environment' 
+                    } 
+                });
+                
+                video.srcObject = stream;
+                video.style.display = 'block';
+                webcamPlaceholder.style.display = 'none';
+                startCameraBtn.disabled = true;
+                captureBtn.disabled = false;
+                
+                // Voice feedback
+                speakResponse("Camera activated. Please position your face in the frame with even lighting and click 'Capture Image' for analysis.");
+                
+            } catch (err) {
+                console.error('Error accessing camera:', err);
+                speakResponse("Error accessing camera. Please ensure you've granted camera permissions and that your device has a working camera.");
+            }
+        });
+        
+        captureBtn.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Convert to data URL and display
+            capturedImage.src = canvas.toDataURL('image/png');
+            capturedImage.style.display = 'block';
+            video.style.display = 'none';
+            analyzeBtn.disabled = false;
+            
+            // Stop the camera stream
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            
+            speakResponse("Image captured successfully. Click 'Analyze Skin' to process the image using our AI model.");
+        });
+        
+        analyzeBtn.addEventListener('click', () => {
+            // Show loading state
+            analyzeBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Analyzing...';
+            analyzeBtn.disabled = true;
+            
+            // Simulate analysis process
+            setTimeout(() => {
+                // Show results
+                resultsPlaceholder.style.display = 'none';
+                analysisResults.style.display = 'block';
+                recommendationsPlaceholder.style.display = 'none';
+                recommendationsContent.style.display = 'block';
+                
+                // Reset button
+                analyzeBtn.innerHTML = '<i class="fas fa-brain"></i> Analyze Skin';
+                analyzeBtn.disabled = false;
+                
+                // Simulate analysis results (in a real app, this would come from your ML model)
+                document.getElementById('skinType').textContent = "Combination";
+                document.getElementById('poreSize').textContent = "Medium";
+                document.getElementById('oilLevel').textContent = "T-Zone Oily";
+                document.getElementById('textureQuality').textContent = "Smooth with some texture";
+                document.getElementById('hydrationLevel').textContent = "Slightly Dehydrated";
+                document.getElementById('sensitivityLevel').textContent = "Low";
+                
+                // Voice feedback with recommendations
+                speakResponse("Analysis complete. Your skin type is Combination with some dehydration in the cheeks and oiliness in the T-zone. I recommend balancing cleansers, hydrating serums, and oil-free moisturizers. How can I help you further?");
+            }, 3000);
+        });
+        
+        // Voice Assistant functionality
+        startListeningBtn.addEventListener('click', () => {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                speakResponse("Speech recognition not supported in this browser. Try Chrome or Edge.");
+                return;
+            }
+            
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+            
+            recognition.start();
+            voiceOutput.textContent = "Listening... Speak now.";
+            startListeningBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Listening...';
+            startListeningBtn.disabled = true;
+            
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                voiceOutput.textContent = `You said: "${transcript}"`;
+                
+                // Process the command
+                processVoiceCommand(transcript);
+                
+                startListeningBtn.innerHTML = '<i class="fas fa-microphone"></i> Start Voice Assistant';
+                startListeningBtn.disabled = false;
+            };
+            
+            recognition.onerror = (event) => {
+                voiceOutput.textContent = `Error: ${event.error}`;
+                startListeningBtn.innerHTML = '<i class="fas fa-microphone"></i> Start Voice Assistant';
+                startListeningBtn.disabled = false;
+            };
+            
+            recognition.onend = () => {
+                startListeningBtn.innerHTML = '<i class="fas fa-microphone"></i> Start Voice Assistant';
+                startListeningBtn.disabled = false;
+            };
+        });
+        
+        function processVoiceCommand(command) {
+            command = command.toLowerCase();
+            let response = "";
+            
+            if (command.includes("analyze") || command.includes("scan")) {
+                response = "Starting skin analysis. Please make sure your image is captured.";
+                if (!analyzeBtn.disabled) {
+                    analyzeBtn.click();
+                } else {
+                    response = "Please capture an image first before analysis.";
+                }
+            } 
+            else if (command.includes("camera") || command.includes("capture")) {
+                response = "Starting camera for image capture.";
+                if (!startCameraBtn.disabled) {
+                    startCameraBtn.click();
+                } else if (!captureBtn.disabled) {
+                    response = "Camera is already active. Say 'capture image' to take a picture.";
+                }
+            }
+            else if (command.includes("recommendation") || command.includes("product")) {
+                response = "Based on your skin analysis, I recommend oil-free products, hydrating serums with hyaluronic acid, and non-comedogenic moisturizers. For your T-zone, a gentle salicylic acid cleanser would help control oil. Would you like me to list specific products?";
+            }
+            else if (command.includes("thank")) {
+                response = "You're welcome! Thank you for using ADERMA. Is there anything else I can help you with regarding your skin care?";
+            }
+            else if (command.includes("hello") || command.includes("hi")) {
+                response = "Hello! I'm ADERMA's voice assistant. I can help you analyze your skin and recommend products. You can ask me to start the camera, capture an image, or analyze your skin.";
+            }
+            else {
+                response = "I'm not sure how to help with that. You can ask me to analyze your skin, start the camera, or give product recommendations.";
+            }
+            
+            // Speak the response
+            speakResponse(response);
+        }
+        
+        function speakResponse(text) {
+            voiceOutput.textContent = text;
+            
+            // Use the Web Speech API if available
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.9;
+                utterance.pitch = 1.0;
+                window.speechSynthesis.cancel(); // Cancel any ongoing speech
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+    </script>
+</body>
+</html>
